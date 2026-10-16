@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกรับสินค้า</title>
+    <style>
+        * { box-sizing: border-box; font-family: sans-serif; }
+        body { max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .lang-bar { margin-bottom: 20px; text-align: right; }
+        .lang-btn { padding: 8px 16px; margin: 0 4px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .lang-btn.active { background: #2e7d32; color: white; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        button[type="submit"] { background: #2e7d32; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 4px; cursor: pointer; width: 100%; }
+        button[type="submit"]:hover { background: #276c2b; }
+        .success { color: green; margin-top: 10px; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .date-group { margin-bottom: 20px; }
+        .date-header { font-size: 18px; font-weight: bold; padding: 10px; background: #e8f5e9; border-radius: 4px; margin-bottom: 8px; }
+        .total-row { background: #f9f9f9; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1 data-txt="title">ระบบบันทึกรับสินค้า</h1>
+    
+    <div class="lang-bar">
+        <button class="lang-btn active" data-lang="th">🇹🇭 ไทย</button>
+        <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+        <button class="lang-btn" data-lang="zh">🇨🇳 中文</button>
+    </div>
+
+    <!-- ฟอร์มกรอกข้อมูล -->
+    <div class="card">
+        <h2 data-txt="formTitle">กรอกข้อมูลการส่งสินค้า</h2>
+        <form id="entryForm">
+            <div class="form-group">
+                <label data-txt="date">วันที่</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label data-txt="time">เวลาที่มาถึง</label>
+                <input type="time" id="time" required>
+            </div>
+            <div class="form-group">
+                <label data-txt="plate">ทะเบียนรถ</label>
+                <input type="text" id="plate" required>
+            </div>
+            <div class="form-group">
+                <label data-txt="vendor">ชื่อ Vender</label>
+                <input type="text" id="vendor" required>
+            </div>
+            <div class="form-group">
+                <label data-txt="doNo">เลขที่ DO</label>
+                <input type="text" id="doNo" required>
+            </div>
+            <div class="form-group">
+                <label data-txt="pallets">จำนวนพาเลท</label>
+                <input type="number" id="pallets" min="0" required>
+            </div>
+            <div class="form-group">
+                <label data-txt="remark">หมายเหตุ</label>
+                <textarea id="remark" rows="3"></textarea>
+            </div>
+            <button type="submit" data-txt="save">บันทึกข้อมูล</button>
+            <p class="success" id="successMsg">✅ บันทึกสำเร็จ</p>
+        </form>
+    </div>
+
+    <!-- ส่วนสรุป -->
+    <div class="card">
+        <h2 data-txt="summary">สรุปรายวัน</h2>
+        <div id="summaryArea"></div>
+    </div>
+
+    <script>
+        // ===== คำแปล =====
+        const LANG = {
+            th: {
+                title: "ระบบบันทึกรับสินค้า",
+                formTitle: "กรอกข้อมูลการส่งสินค้า",
+                date: "วันที่",
+                time: "เวลาที่มาถึง",
+                plate: "ทะเบียนรถ",
+                vendor: "ชื่อ Vender",
+                doNo: "เลขที่ DO",
+                pallets: "จำนวนพาเลท",
+                remark: "หมายเหตุ",
+                save: "บันทึกข้อมูล",
+                summary: "สรุปรายวัน",
+                success: "✅ บันทึกสำเร็จ",
+                total: "รวมทั้งหมด",
+                totalPallets: "รวมพาเลท",
+                noData: "ยังไม่มีข้อมูล"
+            },
+            en: {
+                title: "Warehouse Delivery Log",
+                formTitle: "Delivery Information",
+                date: "Date",
+                time: "Arrival Time",
+                plate: "License Plate",
+                vendor: "Vendor Name",
+                doNo: "DO Number",
+                pallets: "Number of Pallets",
+                remark: "Remarks",
+                save: "Save Record",
+                summary: "Daily Summary",
+                success: "✅ Saved Successfully",
+                total: "Total",
+                totalPallets: "Total Pallets",
+                noData: "No data available"
+            },
+            zh: {
+                title: "仓库收货记录系统",
+                formTitle: "送货信息",
+                date: "日期",
+                time: "到达时间",
+                plate: "车牌号码",
+                vendor: "供应商名称",
+                doNo: "交货单号",
+                pallets: "托盘数量",
+                remark: "备注",
+                save: "保存记录",
+                summary: "每日汇总",
+                success: "✅ 保存成功",
+                total: "总计",
+                totalPallets: "托盘总数",
+                noData: "暂无数据"
+            }
+        };
+
+        let currentLang = "th";
+        let records = [];
+
+        // โหลดข้อมูล
+        function loadData() {
+            const stored = localStorage.getItem("warehouseRecords");
+            if (stored) records = JSON.parse(stored);
+        }
+
+        // บันทึกข้อมูล
+        function saveData() {
+            localStorage.setItem("warehouseRecords", JSON.stringify(records));
+        }
+
+        // เปลี่ยนภาษา
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll("[data-txt]").forEach(el => {
+                el.textContent = LANG[lang][el.dataset.txt];
+            });
+            document.getElementById("successMsg").textContent = LANG[lang].success;
+            document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
+            document.querySelector(`[data-lang="${lang}"]`).classList.add("active");
+            renderSummary();
+        }
+
+        // แสดงสรุป
+        function renderSummary() {
+            const area = document.getElementById("summaryArea");
+            if (records.length === 0) {
+                area.innerHTML = `<p>${LANG[currentLang].noData}</p>`;
+                return;
+            }
+
+            // จัดกลุ่มตามวันที่ เรียงล่าสุดก่อน
+            const byDate = {};
+            records.forEach(r => {
+                if (!byDate[r.date]) byDate[r.date] = [];
+                byDate[r.date].push(r);
+            });
+
+            let html = "";
+            Object.keys(byDate).sort().reverse().forEach(date => {
+                const list = byDate[date];
+                const totalP = list.reduce((sum, r) => sum + Number(r.pallets), 0);
+                html += `
+                    <div class="date-group">
+                        <div class="date-header">📅 ${date}</div>
+                        <table>
+                            <tr>
+                                <th>${LANG[currentLang].time}</th>
+                                <th>${LANG[currentLang].plate}</th>
+                                <th>${LANG[currentLang].vendor}</th>
+                                <th>${LANG[currentLang].doNo}</th>
+                                <th>${LANG[currentLang].pallets}</th>
+                                <th>${LANG[currentLang].remark}</th>
+                            </tr>
+                            ${list.map(r => `
+                                <tr>
+                                    <td>${r.time}</td>
+                                    <td>${r.plate}</td>
+                                    <td>${r.vendor}</td>
+                                    <td>${r.doNo}</td>
+                                    <td>${r.pallets}</td>
+                                    <td>${r.remark || "-"}</td>
+                                </tr>
+                            `).join("")}
+                            <tr class="total-row">
+                                <td colspan="4">${LANG[currentLang].total}: ${list.length} ${LANG[currentLang].totalPallets}</td>
+                                <td>${totalP}</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+            });
+            area.innerHTML = html;
+        }
+
+        // ส่งฟอร์ม
+        document.getElementById("entryForm").addEventListener("submit", e => {
+            e.preventDefault();
+            records.unshift({
+                date: document.getElementById("date").value,
+                time: document.getElementById("time").value,
+                plate: document.getElementById("plate").value.trim(),
+                vendor: document.getElementById("vendor").value.trim(),
+                doNo: document.getElementById("doNo").value.trim(),
+                pallets: document.getElementById("pallets").value,
+                remark: document.getElementById("remark").value.trim()
+            });
+            saveData();
+            
+            // แจ้งผลและล้างฟอร์ม
+            const msg = document.getElementById("successMsg");
+            msg.style.display = "block";
+            setTimeout(() => msg.style.display = "none", 3000);
+            document.getElementById("entryForm").reset();
+            document.getElementById("date").valueAsDate = new Date();
+            
+            renderSummary();
+        });
+
+        // เปลี่ยนภาษา
+        document.querySelectorAll(".lang-btn").forEach(btn => {
+            btn.addEventListener("click", () => setLang(btn.dataset.lang));
+        });
+
+        // เริ่มทำงาน
+        loadData();
+        setLang("th");
+        document.getElementById("date").valueAsDate = new Date();
+    </script>
+</body>
+</html>
